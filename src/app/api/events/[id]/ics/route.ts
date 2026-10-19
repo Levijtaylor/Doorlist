@@ -18,11 +18,11 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const ics = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Gather//Events//EN',
+    'PRODID:-//Doorlist//Events//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
-    `UID:${e.id}@gather`,
+    `UID:${e.id}@doorlist`,
     `DTSTAMP:${stamp(new Date())}`,
     `DTSTART:${stamp(start)}`,
     `DTEND:${stamp(end)}`,

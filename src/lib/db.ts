@@ -123,14 +123,14 @@ CREATE TABLE IF NOT EXISTS deliveries (
 declare global {
   // Reuse one client across hot reloads in development.
   // eslint-disable-next-line no-var
-  var __gatherDb: { client: Client; ready: Promise<void> } | undefined;
+  var __doorlistDb: { client: Client; ready: Promise<void> } | undefined;
 }
 
 /** Turso in production (TURSO_DATABASE_URL), a local SQLite file otherwise. */
 function open() {
   let url = process.env.TURSO_DATABASE_URL;
   if (!url) {
-    const file = process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'gather.db');
+    const file = process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'doorlist.db');
     fs.mkdirSync(path.dirname(file), { recursive: true });
     url = `file:${file.replace(/\\/g, '/')}`;
   }
@@ -139,7 +139,7 @@ function open() {
 }
 
 async function db(): Promise<Client> {
-  const conn = (globalThis.__gatherDb ??= open());
+  const conn = (globalThis.__doorlistDb ??= open());
   await conn.ready;
   return conn.client;
 }

@@ -8,7 +8,7 @@ export default async function Header() {
     <header className="site-header">
       <div className="container header-row">
         <Link href="/" className="logo">
-          Gather<span>.</span>
+          Doorlist<span>.</span>
         </Link>
         <nav>
           {me?.password_hash ? (

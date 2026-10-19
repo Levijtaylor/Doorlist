@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 import { batch, get, run, stmt } from './db';
 import { secretToken, shortId } from './ids';
 
-export const SESSION_COOKIE = 'gather_session';
+export const SESSION_COOKIE = 'doorlist_session';
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 180;
 
 export type Person = {

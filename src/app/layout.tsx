@@ -7,7 +7,7 @@ const display = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-disp
 const body = Figtree({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: { default: 'Gather', template: '%s · Gather' },
+  title: { default: 'Doorlist', template: '%s · Doorlist' },
   description: 'Plan an event, share one link anywhere, and see who’s coming.',
 };
 

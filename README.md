@@ -1,4 +1,4 @@
-# Gather
+# Doorlist
 
 Event invites that work in any messaging app. The host makes an account; everyone else RSVPs with just their first and last name.
 
@@ -9,13 +9,13 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000, click **Host an event**, and create an account. In development the database is a local SQLite file, created automatically at `data/gather.db`. In production it's Turso (see below).
+Open http://localhost:3000, click **Host an event**, and create an account. In development the database is a local SQLite file, created automatically at `data/doorlist.db`. In production it's Turso (see below).
 
 ## What it does
 
 **Hosts** (account required)
 - Create an event: banner (upload a photo or pick a pattern), accent color, title, description, start/end time and time zone, place and address or video link, dress code.
-- Cost: a fee toggle, amount, currency, and "how to pay" instructions. Gather shows the fee; it doesn't collect payments.
+- Cost: a fee toggle, amount, currency, and "how to pay" instructions. Doorlist shows the fee; it doesn't collect payments.
 - What to bring: a note for everyone, plus a sign-up list of items with quantities that guests claim.
 - Guests: plus-ones per person, capacity, RSVP deadline, whether "Maybe" is allowed, whether guests see the guest list, and invite-only mode.
 - Who's invited: a list of names with an optional phone and email. Each person gets a personal link, so the tracker can show who hasn't replied.
@@ -51,9 +51,9 @@ Install the Turso CLI (on Windows, via WSL or `scoop install turso`), then:
 
 ```bash
 turso auth signup
-turso db create gather
-turso db show gather --url
-turso db tokens create gather
+turso db create doorlist
+turso db show doorlist --url
+turso db tokens create doorlist
 ```
 
 Keep the URL (`libsql://...`) and the token. The tables are created automatically on first request.
@@ -62,7 +62,7 @@ Keep the URL (`libsql://...`) and the token. The tables are created automaticall
 
 1. Push this repo to GitHub.
 2. In Vercel, click **Add New → Project** and import the repo. The defaults are correct for Next.js.
-3. Under **Environment Variables**, add `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`, plus `APP_URL` set to your Vercel URL (for example `https://gather-yourname.vercel.app`) or your own domain.
+3. Under **Environment Variables**, add `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`, plus `APP_URL` set to your Vercel URL (for example `https://doorlist-yourname.vercel.app`) or your own domain.
 4. Deploy. Every push to `main` redeploys.
 
 Vercel's Hobby plan is for non-commercial use. If you start charging for the app, move to the Pro plan.
@@ -71,7 +71,7 @@ Vercel's Hobby plan is for non-commercial use. If you start charging for the app
 
 1. Sign up at resend.com, add your domain, and add the DNS records it shows you (SPF/DKIM). Without a verified domain, Resend only sends to your own address.
 2. Create an API key.
-3. In Vercel, add `RESEND_API_KEY` and `EMAIL_FROM` (for example `Gather <invites@yourdomain.com>`), then redeploy.
+3. In Vercel, add `RESEND_API_KEY` and `EMAIL_FROM` (for example `Doorlist <invites@yourdomain.com>`), then redeploy.
 
 ### 4. Text messages (optional, paid)
 

@@ -280,7 +280,7 @@ export default function EventForm({
           <input id="hasFee" type="checkbox" checked={v.hasFee} onChange={check('hasFee')} />
           <span>
             There’s a fee to attend
-            <small>Guests see the amount and how to pay. Gather doesn’t collect payments.</small>
+            <small>Guests see the amount and how to pay. Doorlist doesn’t collect payments.</small>
           </span>
         </label>
         {v.hasFee && (

@@ -15,7 +15,7 @@ async function sendTwilio(to: string, body: string, whatsapp: boolean): Promise<
   const token = process.env.TWILIO_AUTH_TOKEN;
   const from = whatsapp ? process.env.TWILIO_WHATSAPP_FROM : process.env.TWILIO_FROM_NUMBER;
   if (!sid || !token || !from) {
-    console.log(`[gather] ${channel} to ${to} (Twilio not configured):\n${body}\n`);
+    console.log(`[doorlist] ${channel} to ${to} (Twilio not configured):\n${body}\n`);
     return { channel, destination: to, status: 'logged', detail: 'Twilio is not set up, so the message was written to the server log.' };
   }
   try {
@@ -45,7 +45,7 @@ async function sendEmail(to: string, subject: string, text: string): Promise<Out
   const key = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
   if (!key || !from) {
-    console.log(`[gather] email to ${to} (Resend not configured): ${subject}\n${text}\n`);
+    console.log(`[doorlist] email to ${to} (Resend not configured): ${subject}\n${text}\n`);
     return { channel: 'email', destination: to, status: 'logged', detail: 'Email is not set up, so the message was written to the server log.' };
   }
   try {
