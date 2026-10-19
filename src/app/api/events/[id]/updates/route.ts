@@ -7,8 +7,7 @@ import { postUpdate } from '@/lib/notify';
 import { appOrigin } from '@/lib/origin';
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  const me = currentPerson();
-  const event = getEvent(params.id);
+  const [me, event] = await Promise.all([currentPerson(), getEvent(params.id)]);
   if (!event) return fail('That event no longer exists.', 404);
   if (!me || me.id !== event.host_id) return fail('Only the host can send updates.', 403);
 

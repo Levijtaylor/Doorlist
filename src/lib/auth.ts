@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { db } from './db';
+import { batch, get, run, stmt } from './db';
 import { secretToken, shortId } from './ids';
 
 export const SESSION_COOKIE = 'gather_session';
@@ -19,13 +19,10 @@ export type Person = {
   created_at: string;
 };
 
-export function currentPerson(): Person | null {
+export async function currentPerson(): Promise<Person | null> {
   const token = cookies().get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  const row = db
-    .prepare('SELECT p.* FROM sessions s JOIN people p ON p.id = s.person_id WHERE s.token = ? AND s.expires_at > ?')
-    .get(token, Date.now()) as Person | undefined;
-  return row ?? null;
+  return get<Person>('SELECT p.* FROM sessions s JOIN people p ON p.id = s.person_id WHERE s.token = ? AND s.expires_at > ?', token, Date.now());
 }
 
 export function hasAccount(p: Person | null): p is Person {
@@ -33,23 +30,24 @@ export function hasAccount(p: Person | null): p is Person {
 }
 
 /** For host-only pages: send people without an account to sign up / log in. */
-export function requireAccount(nextPath: string): Person {
-  const me = currentPerson();
+export async function requireAccount(nextPath: string): Promise<Person> {
+  const me = await currentPerson();
   if (hasAccount(me)) return me;
   redirect(`${me ? '/signup' : '/login'}?next=${encodeURIComponent(nextPath)}`);
 }
 
-export function getPerson(id: string): Person | null {
-  return (db.prepare('SELECT * FROM people WHERE id = ?').get(id) as Person | undefined) ?? null;
+export function getPerson(id: string): Promise<Person | null> {
+  return get<Person>('SELECT * FROM people WHERE id = ?', id);
 }
 
-export function findAccountByEmail(email: string): Person | null {
-  return (db.prepare('SELECT * FROM people WHERE email = ? AND password_hash IS NOT NULL').get(email) as Person | undefined) ?? null;
+export function findAccountByEmail(email: string): Promise<Person | null> {
+  return get<Person>('SELECT * FROM people WHERE email = ? AND password_hash IS NOT NULL', email);
 }
 
-export function createPerson(input: { firstName: string; lastName: string; email?: string | null; phone?: string | null; passwordHash?: string | null }): Person {
+export async function createPerson(input: { firstName: string; lastName: string; email?: string | null; phone?: string | null; passwordHash?: string | null }): Promise<Person> {
   const id = shortId(12);
-  db.prepare('INSERT INTO people (id, first_name, last_name, email, phone, password_hash, access_key) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+  await run(
+    'INSERT INTO people (id, first_name, last_name, email, phone, password_hash, access_key) VALUES (?, ?, ?, ?, ?, ?, ?)',
     id,
     input.firstName,
     input.lastName,
@@ -58,16 +56,16 @@ export function createPerson(input: { firstName: string; lastName: string; email
     input.passwordHash ?? null,
     secretToken(),
   );
-  return getPerson(id)!;
+  return (await getPerson(id))!;
 }
 
 function isHttps(req: Request): boolean {
   return new URL(req.url).protocol === 'https:' || req.headers.get('x-forwarded-proto') === 'https';
 }
 
-export function startSession(res: NextResponse, req: Request, personId: string): void {
+export async function startSession(res: NextResponse, req: Request, personId: string): Promise<void> {
   const token = secretToken(32);
-  db.prepare('INSERT INTO sessions (token, person_id, expires_at) VALUES (?, ?, ?)').run(token, personId, Date.now() + MAX_AGE_SECONDS * 1000);
+  await run('INSERT INTO sessions (token, person_id, expires_at) VALUES (?, ?, ?)', token, personId, Date.now() + MAX_AGE_SECONDS * 1000);
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: 'lax',
@@ -77,9 +75,9 @@ export function startSession(res: NextResponse, req: Request, personId: string):
   });
 }
 
-export function endSession(res: NextResponse): void {
+export async function endSession(res: NextResponse): Promise<void> {
   const token = cookies().get(SESSION_COOKIE)?.value;
-  if (token) db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+  if (token) await run('DELETE FROM sessions WHERE token = ?', token);
   res.cookies.delete(SESSION_COOKIE);
 }
 
@@ -92,12 +90,16 @@ export function verifyPassword(password: string, hash: string): boolean {
 }
 
 /** When a guest logs in to an existing account, carry their RSVPs and item sign-ups over. */
-export function mergeGuestInto(guestId: string, accountId: string): void {
-  db.transaction(() => {
-    db.prepare('UPDATE OR IGNORE rsvps SET person_id = ? WHERE person_id = ?').run(accountId, guestId);
-    db.prepare('UPDATE OR IGNORE item_claims SET person_id = ? WHERE person_id = ?').run(accountId, guestId);
-    db.prepare('UPDATE invitees SET person_id = ? WHERE person_id = ?').run(accountId, guestId);
-    db.prepare('UPDATE deliveries SET person_id = ? WHERE person_id = ?').run(accountId, guestId);
-    db.prepare('DELETE FROM people WHERE id = ? AND password_hash IS NULL').run(guestId);
-  })();
+export async function mergeGuestInto(guestId: string, accountId: string): Promise<void> {
+  await batch([
+    stmt('UPDATE OR IGNORE rsvps SET person_id = ? WHERE person_id = ?', accountId, guestId),
+    stmt('UPDATE OR IGNORE item_claims SET person_id = ? WHERE person_id = ?', accountId, guestId),
+    stmt('UPDATE invitees SET person_id = ? WHERE person_id = ?', accountId, guestId),
+    stmt('UPDATE deliveries SET person_id = ? WHERE person_id = ?', accountId, guestId),
+    // Rows left behind were duplicates of something the account already had.
+    stmt('DELETE FROM rsvps WHERE person_id = ?', guestId),
+    stmt('DELETE FROM item_claims WHERE person_id = ?', guestId),
+    stmt('DELETE FROM sessions WHERE person_id = ?', guestId),
+    stmt('DELETE FROM people WHERE id = ? AND password_hash IS NULL', guestId),
+  ]);
 }

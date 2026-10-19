@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ['better-sqlite3'],
+    // The libSQL client loads a native module for local SQLite files; keep it out of the bundle.
+    serverComponentsExternalPackages: ['@libsql/client', 'libsql'],
   },
 };
 

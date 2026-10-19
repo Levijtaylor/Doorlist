@@ -7,7 +7,7 @@ const esc = (s: string) => s.replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').rep
 
 /** "Add to calendar": a single-event .ics file that works with Apple, Google and Outlook calendars. */
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const e = getEvent(params.id);
+  const e = await getEvent(params.id);
   if (!e) return new Response('Not found', { status: 404 });
 
   const start = zonedToUtc(e.starts_at, e.timezone);

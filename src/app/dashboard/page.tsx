@@ -8,10 +8,9 @@ export const metadata = { title: 'My events' };
 
 const STATUS_LABEL = { going: 'Going', maybe: 'Maybe', declined: 'Can’t go' } as const;
 
-export default function DashboardPage() {
-  const me = requireAccount('/dashboard');
-  const hosting = hostedEvents(me.id);
-  const attending = attendingEvents(me.id);
+export default async function DashboardPage() {
+  const me = await requireAccount('/dashboard');
+  const [hosting, attending] = await Promise.all([hostedEvents(me.id), attendingEvents(me.id)]);
 
   return (
     <div className="container page">

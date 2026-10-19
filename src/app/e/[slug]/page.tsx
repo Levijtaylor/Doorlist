@@ -15,8 +15,8 @@ import { appOrigin } from '@/lib/origin';
 
 type Props = { params: { slug: string }; searchParams: { via?: string; i?: string } };
 
-export function generateMetadata({ params }: Props): Metadata {
-  const e = getEventBySlug(params.slug);
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const e = await getEventBySlug(params.slug);
   if (!e) return { title: 'Event not found' };
   const when = formatWhen(e.starts_at, e.ends_at, e.timezone);
   const description = [`${when.date}, ${when.time}`, e.location_name].filter(Boolean).join(' · ');
@@ -33,27 +33,31 @@ function initials(first: string, last: string) {
   return `${first[0] ?? ''}${last[0] ?? ''}`.toUpperCase();
 }
 
-export default function EventPage({ params, searchParams }: Props) {
-  const e = getEventBySlug(params.slug);
+export default async function EventPage({ params, searchParams }: Props) {
+  const e = await getEventBySlug(params.slug);
   if (!e) notFound();
 
-  const me = currentPerson();
+  const me = await currentPerson();
   const isHost = me?.id === e.host_id;
-  const host = getPerson(e.host_id);
   const source = parseSource(searchParams.via);
-  const invitee = searchParams.i ? getInviteeByToken(e.id, searchParams.i) : null;
-  const rsvp = me ? getRsvp(e.id, me.id) : null;
-  const stats = eventStats(e.id);
-  const items = listItems(e.id);
-  const updates = listUpdates(e.id);
-  const guests = e.show_guest_list || isHost ? listGuests(e.id).filter((g) => g.status !== 'declined') : [];
+  const [host, invitee, rsvp, stats, items, updates, allGuests, invitedPerson] = await Promise.all([
+    getPerson(e.host_id),
+    searchParams.i ? getInviteeByToken(e.id, searchParams.i) : null,
+    me ? getRsvp(e.id, me.id) : null,
+    eventStats(e.id),
+    listItems(e.id),
+    listUpdates(e.id),
+    e.show_guest_list || isHost ? listGuests(e.id) : [],
+    me ? isInvitedPerson(e.id, me.id) : false,
+  ]);
+  const guests = allGuests.filter((g) => g.status !== 'declined');
   const when = formatWhen(e.starts_at, e.ends_at, e.timezone);
   const accent = accentFor(e.accent);
 
   const deadlinePassed = !!e.rsvp_deadline && zonedToUtc(e.rsvp_deadline, e.timezone).getTime() < Date.now();
   const full = !!e.capacity && stats.headcount >= e.capacity && rsvp?.status !== 'going';
   const closedReason = isHost ? null : deadlinePassed ? `RSVPs closed on ${formatDeadline(e.rsvp_deadline!)}.` : null;
-  const invited = !!invitee || !!rsvp || (me ? isInvitedPerson(e.id, me.id) : false);
+  const invited = !!invitee || !!rsvp || invitedPerson;
   const blockedReason = isHost
     ? null
     : e.invite_only && !invited

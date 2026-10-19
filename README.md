@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000, click **Host an event**, and create an account. The SQLite database is created automatically at `data/gather.db`.
+Open http://localhost:3000, click **Host an event**, and create an account. In development the database is a local SQLite file, created automatically at `data/gather.db`. In production it's Turso (see below).
 
 ## What it does
 
@@ -38,35 +38,56 @@ Every invite link carries `?via=sms|whatsapp|messenger|snapchat|instagram|email|
 |---|---|---|
 | Text message | SMS to their number | Twilio |
 | WhatsApp | WhatsApp to their number | Twilio WhatsApp |
-| Email | Their email | SendGrid |
+| Email | Their email | Resend |
 | Snapchat, Instagram, Messenger | Guest picks SMS, WhatsApp or email (phone number field by default) | These apps don't let outside services message their users, so the phone number is the fallback |
 
 Guests can also choose "No messages, I'll check this page." Guests have no password, so every text or email they get includes a personal link that signs them back in on any device.
 
-## Turning on real messages
+## Deploying for free: Vercel + Turso + Resend
 
-Without credentials, messages go to the server console and show as "logged" on the manage page. To send them for real, copy `.env.example` to `.env.local` and fill in:
+### 1. Database (Turso, free tier)
 
-- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` for SMS.
-- `TWILIO_WHATSAPP_FROM` for WhatsApp. WhatsApp only allows free-form messages within 24 hours of the guest messaging you; after that, Meta requires approved message templates.
-- `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL` for email.
-- `APP_URL`, your public URL, so links in messages point to the live site.
+Install the Turso CLI (on Windows, via WSL or `scoop install turso`), then:
 
-## Deploying
+```bash
+turso auth signup
+turso db create gather
+turso db show gather --url
+turso db tokens create gather
+```
 
-The app uses SQLite on local disk, so deploy somewhere with a persistent disk: a VPS, Fly.io with a volume, Railway, Render with a disk, or an Azure App Service with mounted storage. Serverless hosts like Vercel don't keep the database file between requests. To use those, swap `src/lib/db.ts` for Postgres.
+Keep the URL (`libsql://...`) and the token. The tables are created automatically on first request.
 
-Set `DATABASE_PATH` to a file on the persistent volume.
+### 2. Hosting (Vercel Hobby, free)
+
+1. Push this repo to GitHub.
+2. In Vercel, click **Add New → Project** and import the repo. The defaults are correct for Next.js.
+3. Under **Environment Variables**, add `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`, plus `APP_URL` set to your Vercel URL (for example `https://gather-yourname.vercel.app`) or your own domain.
+4. Deploy. Every push to `main` redeploys.
+
+Vercel's Hobby plan is for non-commercial use. If you start charging for the app, move to the Pro plan.
+
+### 3. Email (Resend, free tier)
+
+1. Sign up at resend.com, add your domain, and add the DNS records it shows you (SPF/DKIM). Without a verified domain, Resend only sends to your own address.
+2. Create an API key.
+3. In Vercel, add `RESEND_API_KEY` and `EMAIL_FROM` (for example `Gather <invites@yourdomain.com>`), then redeploy.
+
+### 4. Text messages (optional, paid)
+
+Add `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and `TWILIO_FROM_NUMBER`. US carriers require the number to be registered (toll-free verification or A2P 10DLC) before texts are delivered. `TWILIO_WHATSAPP_FROM` adds WhatsApp; outside a 24-hour reply window, WhatsApp only allows Meta-approved message templates.
+
+Until a provider is configured, its messages go to the server log (on Vercel, the deployment's **Logs** tab) and show as "logged" on the manage page.
 
 ## Known limits
 
-- Next.js 14's link-preview image renderer fails on Windows, so local Windows dev serves the uploaded banner instead of the generated card. Linux hosts render the full card.
+- Next.js 14's link-preview image renderer fails on Windows, so local Windows dev serves the uploaded banner instead of the generated card. Vercel renders the full card.
 - `npm audit` flags advisories in Next 14. Upgrading to Next 15 means making `cookies()`, `headers()` and route `params` async.
 
 ## Layout
 
 ```
-src/lib/        db schema, auth/sessions, event queries, notifications, validation
+src/lib/        db schema (libSQL/Turso), auth/sessions, event queries, notifications, validation
 src/app/api/    JSON routes: auth, guest, events, rsvp, item claims, updates, banner, ics, og
 src/app/        pages: landing, login/signup, dashboard, events/new, events/[id]/edit|manage, e/[slug] (guest page), k/[key] (personal sign-in link)
 src/components/ EventForm, RsvpPanel, ItemsList, ShareInvite, SendUpdate, Tracker, Banner

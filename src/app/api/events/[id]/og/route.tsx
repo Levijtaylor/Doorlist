@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 
 /** The preview card messaging apps show when someone pastes an invite link. */
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const e = getEvent(params.id);
+  const e = await getEvent(params.id);
   if (!e) return new Response('Not found', { status: 404 });
 
   // Next 14's image renderer can't resolve its bundled font path on Windows, so local

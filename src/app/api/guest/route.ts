@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { run } from '@/lib/db';
 import { createPerson, currentPerson, startSession } from '@/lib/auth';
 import { fail, parseBody } from '@/lib/api';
 import { guestSchema } from '@/lib/schemas';
@@ -15,9 +15,10 @@ export async function POST(req: Request) {
   const email = cleanEmail(data.email);
   if (email.error) return fail(email.error);
 
-  const me = currentPerson();
+  const me = await currentPerson();
   if (me && !me.password_hash) {
-    db.prepare('UPDATE people SET first_name = ?, last_name = ?, phone = COALESCE(?, phone), email = COALESCE(?, email) WHERE id = ?').run(
+    await run(
+      'UPDATE people SET first_name = ?, last_name = ?, phone = COALESCE(?, phone), email = COALESCE(?, email) WHERE id = ?',
       data.firstName,
       data.lastName,
       phone.value,
@@ -28,8 +29,8 @@ export async function POST(req: Request) {
   }
   if (me) return NextResponse.json({ ok: true, personId: me.id });
 
-  const person = createPerson({ firstName: data.firstName, lastName: data.lastName, phone: phone.value, email: email.value });
+  const person = await createPerson({ firstName: data.firstName, lastName: data.lastName, phone: phone.value, email: email.value });
   const res = NextResponse.json({ ok: true, personId: person.id });
-  startSession(res, req, person.id);
+  await startSession(res, req, person.id);
   return res;
 }

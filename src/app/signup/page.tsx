@@ -5,9 +5,9 @@ import { safeNext } from '@/lib/nav';
 
 export const metadata = { title: 'Create an account' };
 
-export default function SignupPage({ searchParams }: { searchParams: { next?: string } }) {
+export default async function SignupPage({ searchParams }: { searchParams: { next?: string } }) {
   const next = safeNext(searchParams.next);
-  const me = currentPerson();
+  const me = await currentPerson();
   if (me?.password_hash) redirect(next);
   const guest = me && !me.password_hash;
   return (

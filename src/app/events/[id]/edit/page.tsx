@@ -3,22 +3,20 @@ import EventForm, { type EventFormValues } from '@/components/EventForm';
 import { bannerSrc } from '@/components/Banner';
 import { requireAccount } from '@/lib/auth';
 import { eventStats, getEvent, listInvitees } from '@/lib/events';
-import { db } from '@/lib/db';
+import { all } from '@/lib/db';
 
 export const metadata = { title: 'Edit event' };
 
-export default function EditEventPage({ params }: { params: { id: string } }) {
-  const me = requireAccount(`/events/${params.id}/edit`);
-  const e = getEvent(params.id);
+export default async function EditEventPage({ params }: { params: { id: string } }) {
+  const me = await requireAccount(`/events/${params.id}/edit`);
+  const e = await getEvent(params.id);
   if (!e || e.host_id !== me.id) notFound();
 
-  const items = db.prepare('SELECT id, name, quantity, note FROM items WHERE event_id = ? ORDER BY sort, rowid').all(e.id) as {
-    id: string;
-    name: string;
-    quantity: number;
-    note: string;
-  }[];
-  const stats = eventStats(e.id);
+  const [items, stats, invitees] = await Promise.all([
+    all<{ id: string; name: string; quantity: number; note: string }>('SELECT id, name, quantity, note FROM items WHERE event_id = ? ORDER BY sort, rowid', e.id),
+    eventStats(e.id),
+    listInvitees(e.id),
+  ]);
 
   const initial: EventFormValues = {
     title: e.title,
@@ -44,7 +42,7 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
     showGuestList: !!e.show_guest_list,
     inviteOnly: !!e.invite_only,
     items: items.map((it) => ({ key: `i-${it.id}`, ...it })),
-    invitees: listInvitees(e.id).map((p) => ({ key: `p-${p.id}`, id: p.id, name: p.name, phone: p.phone, email: p.email })),
+    invitees: invitees.map((p) => ({ key: `p-${p.id}`, id: p.id, name: p.name, phone: p.phone, email: p.email })),
   };
 
   return (

@@ -30,8 +30,8 @@ const blank: EventFormValues = {
   invitees: [],
 };
 
-export default function NewEventPage() {
-  requireAccount('/events/new');
+export default async function NewEventPage() {
+  await requireAccount('/events/new');
   return (
     <div className="container page" style={{ maxWidth: 820 }}>
       <div className="stack">

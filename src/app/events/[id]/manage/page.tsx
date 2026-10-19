@@ -14,17 +14,20 @@ export const metadata = { title: 'Manage event' };
 
 const STATUS_LABEL = { going: 'Going', maybe: 'Maybe', declined: 'Can’t go' } as const;
 
-export default function ManagePage({ params }: { params: { id: string } }) {
-  const me = requireAccount(`/events/${params.id}/manage`);
-  const e = getEvent(params.id);
+export default async function ManagePage({ params }: { params: { id: string } }) {
+  const me = await requireAccount(`/events/${params.id}/manage`);
+  const e = await getEvent(params.id);
   if (!e || e.host_id !== me.id) notFound();
 
   const when = formatWhen(e.starts_at, e.ends_at, e.timezone);
-  const stats = eventStats(e.id);
-  const guests = listGuests(e.id);
-  const items = listItems(e.id);
-  const updates = listUpdates(e.id);
-  const sources = sourceBreakdown(e.id);
+  const [stats, guests, items, updates, sources, invitees] = await Promise.all([
+    eventStats(e.id),
+    listGuests(e.id),
+    listItems(e.id),
+    listUpdates(e.id),
+    sourceBreakdown(e.id),
+    listInvitees(e.id),
+  ]);
 
   const bringing = new Map<string, string[]>();
   for (const it of items) for (const c of it.claims) bringing.set(c.person_id, [...(bringing.get(c.person_id) ?? []), c.quantity > 1 ? `${it.name} ×${c.quantity}` : it.name]);
@@ -67,7 +70,7 @@ export default function ManagePage({ params }: { params: { id: string } }) {
       <div className="grid-2" style={{ alignItems: 'start', gap: 28 }}>
         <section className="panel">
           <h2>Send invites</h2>
-          <ShareInvite origin={appOrigin()} slug={e.slug} title={e.title} when={`${when.date}, ${when.time}`} invitees={listInvitees(e.id)} />
+          <ShareInvite origin={appOrigin()} slug={e.slug} title={e.title} when={`${when.date}, ${when.time}`} invitees={invitees} />
         </section>
         <section className="panel">
           <h2>Post an update</h2>

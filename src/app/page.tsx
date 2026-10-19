@@ -2,8 +2,8 @@ import Link from 'next/link';
 import Banner from '@/components/Banner';
 import { currentPerson } from '@/lib/auth';
 
-export default function Home() {
-  const me = currentPerson();
+export default async function Home() {
+  const me = await currentPerson();
   const host = !!me?.password_hash;
 
   return (

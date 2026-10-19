@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { run } from '@/lib/db';
 import { createPerson, currentPerson, findAccountByEmail, hashPassword, startSession } from '@/lib/auth';
 import { fail, parseBody } from '@/lib/api';
 import { signupSchema } from '@/lib/schemas';
@@ -13,14 +13,15 @@ export async function POST(req: Request) {
   if (email.error || !email.value) return fail(email.error ?? 'Enter a valid email address.');
   const phone = cleanPhone(data.phone);
   if (phone.error) return fail(phone.error);
-  if (findAccountByEmail(email.value)) return fail('An account with that email already exists. Log in instead.', 409);
+  if (await findAccountByEmail(email.value)) return fail('An account with that email already exists. Log in instead.', 409);
 
   const passwordHash = hashPassword(data.password);
-  const me = currentPerson();
+  const me = await currentPerson();
 
   // A guest who decides to make an account keeps their RSVPs: upgrade them in place.
   if (me && !me.password_hash) {
-    db.prepare('UPDATE people SET first_name = ?, last_name = ?, email = ?, phone = COALESCE(?, phone), password_hash = ? WHERE id = ?').run(
+    await run(
+      'UPDATE people SET first_name = ?, last_name = ?, email = ?, phone = COALESCE(?, phone), password_hash = ? WHERE id = ?',
       data.firstName,
       data.lastName,
       email.value,
@@ -31,8 +32,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  const person = createPerson({ firstName: data.firstName, lastName: data.lastName, email: email.value, phone: phone.value, passwordHash });
+  const person = await createPerson({ firstName: data.firstName, lastName: data.lastName, email: email.value, phone: phone.value, passwordHash });
   const res = NextResponse.json({ ok: true });
-  startSession(res, req, person.id);
+  await startSession(res, req, person.id);
   return res;
 }

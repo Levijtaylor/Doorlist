@@ -1,7 +1,7 @@
 import { getEvent } from '@/lib/events';
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const event = getEvent(params.id);
+  const event = await getEvent(params.id);
   const match = event?.banner_image && /^data:(image\/[a-z]+);base64,(.+)$/.exec(event.banner_image);
   if (!match) return new Response('No banner image', { status: 404 });
   return new Response(Buffer.from(match[2], 'base64'), {

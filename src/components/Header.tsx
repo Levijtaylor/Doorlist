@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { currentPerson } from '@/lib/auth';
 import LogoutButton from './LogoutButton';
 
-export default function Header() {
-  const me = currentPerson();
+export default async function Header() {
+  const me = await currentPerson();
   return (
     <header className="site-header">
       <div className="container header-row">

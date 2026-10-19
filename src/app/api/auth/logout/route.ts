@@ -3,6 +3,6 @@ import { endSession } from '@/lib/auth';
 
 export async function POST() {
   const res = NextResponse.json({ ok: true });
-  endSession(res);
+  await endSession(res);
   return res;
 }

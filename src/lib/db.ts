@@ -1,7 +1,9 @@
-import Database from 'better-sqlite3';
+import { createClient, type Client, type InStatement, type InValue } from '@libsql/client';
 import fs from 'node:fs';
 import path from 'node:path';
 
+// Child rows are removed explicitly in code (see deleteEvent, syncItems), so behavior
+// doesn't depend on whether the server enforces foreign keys.
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS people (
   id TEXT PRIMARY KEY,
@@ -119,19 +121,47 @@ CREATE TABLE IF NOT EXISTS deliveries (
 `;
 
 declare global {
-  // Reuse one connection across hot reloads in development.
+  // Reuse one client across hot reloads in development.
   // eslint-disable-next-line no-var
-  var __gatherDb: Database.Database | undefined;
+  var __gatherDb: { client: Client; ready: Promise<void> } | undefined;
 }
 
-function open(): Database.Database {
-  const file = process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'gather.db');
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  const conn = new Database(file);
-  conn.pragma('journal_mode = WAL');
-  conn.pragma('foreign_keys = ON');
-  conn.exec(SCHEMA);
-  return conn;
+/** Turso in production (TURSO_DATABASE_URL), a local SQLite file otherwise. */
+function open() {
+  let url = process.env.TURSO_DATABASE_URL;
+  if (!url) {
+    const file = process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'gather.db');
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    url = `file:${file.replace(/\\/g, '/')}`;
+  }
+  const client = createClient({ url, authToken: process.env.TURSO_AUTH_TOKEN });
+  return { client, ready: client.executeMultiple(SCHEMA) };
 }
 
-export const db: Database.Database = globalThis.__gatherDb ?? (globalThis.__gatherDb = open());
+async function db(): Promise<Client> {
+  const conn = (globalThis.__gatherDb ??= open());
+  await conn.ready;
+  return conn.client;
+}
+
+type Row = Record<string, unknown>;
+
+export async function all<T = Row>(sql: string, ...args: InValue[]): Promise<T[]> {
+  const rs = await (await db()).execute({ sql, args });
+  return rs.rows.map((r) => Object.fromEntries(rs.columns.map((c, i) => [c, r[i]])) as T);
+}
+
+export async function get<T = Row>(sql: string, ...args: InValue[]): Promise<T | null> {
+  return (await all<T>(sql, ...args))[0] ?? null;
+}
+
+export async function run(sql: string, ...args: InValue[]): Promise<void> {
+  await (await db()).execute({ sql, args });
+}
+
+export const stmt = (sql: string, ...args: InValue[]): InStatement => ({ sql, args });
+
+/** Runs the statements atomically: all apply or none do. */
+export async function batch(statements: InStatement[]): Promise<void> {
+  if (statements.length) await (await db()).batch(statements, 'write');
+}
