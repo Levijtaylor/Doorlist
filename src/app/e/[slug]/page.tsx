@@ -9,7 +9,7 @@ import { currentPerson, getPerson } from '@/lib/auth';
 import { accentFor } from '@/lib/banners';
 import { parseSource } from '@/lib/channels';
 import { displayPhone } from '@/lib/contact';
-import { eventStats, getEventBySlug, getInviteeByToken, getRsvp, isInvitedPerson, listGuests, listItems, listUpdates } from '@/lib/events';
+import { eventStats, getEventBySlug, getInviteeByToken, getRsvp, isInvitedPerson, listGuests, listItems, listUpdates, parseFeatures } from '@/lib/events';
 import { formatDeadline, formatMoney, formatWhen, shortName, timeAgo, zonedToUtc } from '@/lib/format';
 import { appOrigin } from '@/lib/origin';
 
@@ -72,6 +72,7 @@ export default async function EventPage({ params, searchParams }: Props) {
   if (searchParams.via) qs.set('via', searchParams.via);
   const returnPath = `/e/${e.slug}${qs.size ? `?${qs}` : ''}`;
   const location = [e.location_name, e.location_address].filter(Boolean);
+  const features = parseFeatures(e);
 
   return (
     <div className="event-page" style={{ ['--ev-light' as string]: accent.light, ['--ev-dark' as string]: accent.dark }}>
@@ -168,6 +169,17 @@ export default async function EventPage({ params, searchParams }: Props) {
             <section className="section">
               <h2>About</h2>
               <p className="prose">{e.description}</p>
+            </section>
+          )}
+
+          {features.length > 0 && (
+            <section className="section">
+              <h2>Features</h2>
+              <ul className="feature-list">
+                {features.map((f) => (
+                  <li key={f}>{f}</li>
+                ))}
+              </ul>
             </section>
           )}
 

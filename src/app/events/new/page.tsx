@@ -26,6 +26,7 @@ const blank: EventFormValues = {
   allowMaybe: true,
   showGuestList: true,
   inviteOnly: false,
+  features: [],
   items: [],
   invitees: [],
 };

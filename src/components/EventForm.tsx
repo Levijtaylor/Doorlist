@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { ACCENTS, BANNER_PRESETS } from '@/lib/banners';
 import { api } from '@/lib/client';
+import { SUGGESTED_FEATURES } from '@/lib/features';
 import Banner from './Banner';
 
 export type ItemDraft = { key: string; id?: string; name: string; quantity: number; note: string };
@@ -32,6 +33,7 @@ export type EventFormValues = {
   allowMaybe: boolean;
   showGuestList: boolean;
   inviteOnly: boolean;
+  features: string[];
   items: ItemDraft[];
   invitees: InviteeDraft[];
 };
@@ -82,6 +84,16 @@ export default function EventForm({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [zones, setZones] = useState<string[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [customFeature, setCustomFeature] = useState('');
+
+  const hasFeature = (f: string) => v.features.some((x) => x.toLowerCase() === f.toLowerCase());
+  const toggleFeature = (f: string) => set('features', hasFeature(f) ? v.features.filter((x) => x.toLowerCase() !== f.toLowerCase()) : [...v.features, f]);
+  function addCustomFeature() {
+    const f = customFeature.trim().slice(0, 60);
+    if (f && !hasFeature(f)) set('features', [...v.features, f]);
+    setCustomFeature('');
+  }
+  const customFeatures = v.features.filter((f) => !SUGGESTED_FEATURES.some((s) => s.toLowerCase() === f.toLowerCase()));
 
   useEffect(() => {
     if (mode === 'create' && !initial.timezone) {
@@ -143,6 +155,7 @@ export default function EventForm({
       allowMaybe: v.allowMaybe,
       showGuestList: v.showGuestList,
       inviteOnly: v.inviteOnly,
+      features: v.features,
       items: v.items.filter((i) => i.name.trim()).map(({ key: _k, ...i }) => ({ ...i, quantity: Number(i.quantity) || 1 })),
       invitees: v.invitees.filter((i) => i.name.trim()).map(({ key: _k, ...i }) => i),
       notifyMessage: notifyMessage.trim() || undefined,
@@ -271,6 +284,45 @@ export default function EventForm({
           </span>
           <input id="onlineUrl" type="url" value={v.onlineUrl} onChange={text('onlineUrl')} placeholder="https://" />
         </label>
+      </section>
+
+      {/* Features */}
+      <section className="panel section">
+        <div className="stack" style={{ gap: 4 }}>
+          <h2>Features</h2>
+          <p className="muted small">What will be available at the event. Tap to add, tap again to remove.</p>
+        </div>
+        <div className="feature-chips" role="group" aria-label="Suggested features">
+          {SUGGESTED_FEATURES.map((f) => (
+            <button key={f} type="button" className="feature-chip" aria-pressed={hasFeature(f)} onClick={() => toggleFeature(f)}>
+              {f}
+            </button>
+          ))}
+          {customFeatures.map((f) => (
+            <button key={f} type="button" className="feature-chip" aria-pressed="true" aria-label={`Remove ${f}`} onClick={() => toggleFeature(f)}>
+              {f} ×
+            </button>
+          ))}
+        </div>
+        <div className="linkbox">
+          <input
+            id="customFeature"
+            type="text"
+            value={customFeature}
+            maxLength={60}
+            placeholder="Add your own, like “Lawn games” or “Heated patio”"
+            onChange={(e) => setCustomFeature(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addCustomFeature();
+              }
+            }}
+          />
+          <button type="button" className="btn btn-sm" onClick={addCustomFeature} disabled={!customFeature.trim()}>
+            Add
+          </button>
+        </div>
       </section>
 
       {/* Cost */}

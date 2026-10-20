@@ -1,0 +1,21 @@
+// Common things hosts say will be available. Shared by server and client.
+export const SUGGESTED_FEATURES = [
+  'Food provided',
+  'Drinks provided',
+  'BYOB',
+  'Vegetarian options',
+  'Free parking',
+  'Pool',
+  'Hot tub',
+  'Grill',
+  'Fire pit',
+  'Music / DJ',
+  'Karaoke',
+  'Games',
+  'Photo booth',
+  'Outdoor seating',
+  'Wi-Fi',
+  'Kid-friendly',
+  'Pet-friendly',
+  'Wheelchair accessible',
+] as const;

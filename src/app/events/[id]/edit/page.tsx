@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import EventForm, { type EventFormValues } from '@/components/EventForm';
 import { bannerSrc } from '@/components/Banner';
 import { requireAccount } from '@/lib/auth';
-import { eventStats, getEvent, listInvitees } from '@/lib/events';
+import { eventStats, getEvent, listInvitees, parseFeatures } from '@/lib/events';
 import { all } from '@/lib/db';
 
 export const metadata = { title: 'Edit event' };
@@ -41,6 +41,7 @@ export default async function EditEventPage({ params }: { params: { id: string }
     allowMaybe: !!e.allow_maybe,
     showGuestList: !!e.show_guest_list,
     inviteOnly: !!e.invite_only,
+    features: parseFeatures(e),
     items: items.map((it) => ({ key: `i-${it.id}`, ...it })),
     invitees: invitees.map((p) => ({ key: `p-${p.id}`, id: p.id, name: p.name, phone: p.phone, email: p.email })),
   };

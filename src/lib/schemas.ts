@@ -57,6 +57,12 @@ export const eventSchema = z
     allowMaybe: z.boolean(),
     showGuestList: z.boolean(),
     inviteOnly: z.boolean(),
+    features: z
+      .array(z.string().trim().min(1).max(60, 'Keep each feature under 60 characters.'))
+      .max(30, 'List at most 30 features.')
+      .default([])
+      // Drop repeats, ignoring case.
+      .transform((list) => list.filter((f, i) => list.findIndex((g) => g.toLowerCase() === f.toLowerCase()) === i)),
     items: z
       .array(
         z.object({

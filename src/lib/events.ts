@@ -34,6 +34,8 @@ export type EventRow = {
   invite_only: number;
   /** The host's message sent ahead of invite links; null means use the default. */
   invite_note: string | null;
+  /** JSON array of strings; read it with parseFeatures. */
+  features: string;
   created_at: string;
   updated_at: string;
 };
@@ -54,6 +56,15 @@ export type RsvpRow = {
   updated_at: string;
 };
 
+
+export function parseFeatures(e: Pick<EventRow, 'features'>): string[] {
+  try {
+    const list = JSON.parse(e.features ?? '[]');
+    return Array.isArray(list) ? list.filter((f): f is string => typeof f === 'string') : [];
+  } catch {
+    return [];
+  }
+}
 
 export function getEvent(id: string): Promise<EventRow | null> {
   return get<EventRow>('SELECT * FROM events WHERE id = ?', id);
@@ -278,6 +289,7 @@ export async function saveEvent(hostId: string, input: EventInput, existing?: Ev
     allow_maybe: input.allowMaybe ? 1 : 0,
     show_guest_list: input.showGuestList ? 1 : 0,
     invite_only: input.inviteOnly ? 1 : 0,
+    features: JSON.stringify(input.features),
   };
   const keys = Object.keys(cols);
   const values = Object.values(cols);

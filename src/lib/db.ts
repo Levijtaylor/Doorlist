@@ -142,6 +142,8 @@ function open() {
 // exist, so each one is added here only when the live table lacks it.
 const ADDED_COLUMNS: { table: string; column: string; definition: string }[] = [
   { table: 'events', column: 'invite_note', definition: 'TEXT' },
+  // JSON array of strings: what will be available at the event.
+  { table: 'events', column: 'features', definition: "TEXT NOT NULL DEFAULT '[]'" },
 ];
 
 async function migrate(client: Client): Promise<void> {
