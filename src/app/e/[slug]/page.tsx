@@ -115,7 +115,7 @@ export default async function EventPage({ params, searchParams }: Props) {
                   <dd>
                     {e.location_name && <div style={{ fontWeight: 600 }}>{e.location_name}</div>}
                     {e.location_address && (
-                      <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.join(', '))}`} target="_blank" rel="noopener noreferrer">
+                      <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.location_address)}`} target="_blank" rel="noopener noreferrer">
                         {e.location_address}
                       </a>
                     )}

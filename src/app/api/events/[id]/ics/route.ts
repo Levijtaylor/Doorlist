@@ -13,7 +13,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const start = zonedToUtc(e.starts_at, e.timezone);
   const end = e.ends_at ? zonedToUtc(e.ends_at, e.timezone) : new Date(start.getTime() + 2 * 60 * 60 * 1000);
   const url = `${appOrigin()}/e/${e.slug}`;
-  const location = [e.location_name, e.location_address].filter(Boolean).join(', ') || e.online_url;
+  // Just the address, so calendar apps can find it on a map; the place name stays on the event page.
+  const location = e.location_address || e.location_name || e.online_url;
 
   const ics = [
     'BEGIN:VCALENDAR',
