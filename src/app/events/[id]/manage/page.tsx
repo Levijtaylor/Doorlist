@@ -70,7 +70,7 @@ export default async function ManagePage({ params }: { params: { id: string } })
       <div className="grid-2" style={{ alignItems: 'start', gap: 28 }}>
         <section className="panel">
           <h2>Send invites</h2>
-          <ShareInvite origin={appOrigin()} slug={e.slug} title={e.title} when={`${when.date}, ${when.time}`} invitees={invitees} />
+          <ShareInvite eventId={e.id} savedNote={e.invite_note} origin={appOrigin()} slug={e.slug} title={e.title} when={`${when.date}, ${when.time}`} invitees={invitees} />
         </section>
         <section className="panel">
           <h2>Post an update</h2>

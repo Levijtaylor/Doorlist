@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { copyText } from '@/lib/client';
 import type { Source } from '@/lib/channels';
 import type { InviteeView } from '@/lib/events';
@@ -27,31 +27,75 @@ function Dot({ source }: { source: Source }) {
   );
 }
 
-export default function ShareInvite({ origin, slug, title, when, invitees }: { origin: string; slug: string; title: string; when: string; invitees: InviteeView[] }) {
-  const defaultNote = `You’re invited to ${title} (${when}). RSVP here:`;
-  const draftKey = `doorlist:invite-note:${slug}`;
-  const [note, setNote] = useState(defaultNote);
-  const [toast, setToast] = useState('');
+type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
-  // The host's wording is remembered per event in this browser.
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(draftKey);
-      if (saved !== null) setNote(saved);
-    } catch {
-      /* storage blocked: keep the default */
-    }
-  }, [draftKey]);
+export default function ShareInvite({
+  eventId,
+  origin,
+  slug,
+  title,
+  when,
+  savedNote,
+  invitees,
+}: {
+  eventId: string;
+  origin: string;
+  slug: string;
+  title: string;
+  when: string;
+  savedNote: string | null;
+  invitees: InviteeView[];
+}) {
+  const defaultNote = `You’re invited to ${title} (${when}). RSVP here:`;
+  const [note, setNote] = useState(savedNote ?? defaultNote);
+  const [saveState, setSaveState] = useState<SaveState>('idle');
+  const [toast, setToast] = useState('');
+  const pending = useRef<string | null>(null);
+  const timer = useRef<number | undefined>(undefined);
+
+  // The message is saved with the event, so it's there on every device and every visit.
+  const save = useCallback(
+    async (value: string, keepalive = false) => {
+      pending.current = null;
+      setSaveState('saving');
+      try {
+        const res = await fetch(`/api/events/${eventId}/invite-note`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ note: value === defaultNote ? null : value }),
+          keepalive,
+        });
+        setSaveState(res.ok ? 'saved' : 'error');
+      } catch {
+        setSaveState('error');
+      }
+    },
+    [eventId, defaultNote],
+  );
+
+  function flush(keepalive = false) {
+    window.clearTimeout(timer.current);
+    if (pending.current !== null) void save(pending.current, keepalive);
+  }
 
   function changeNote(value: string) {
     setNote(value);
-    try {
-      if (value === defaultNote) localStorage.removeItem(draftKey);
-      else localStorage.setItem(draftKey, value);
-    } catch {
-      /* storage blocked: the note still works for this visit */
-    }
+    pending.current = value;
+    setSaveState('idle');
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => flush(), 700);
   }
+
+  // Leaving the page mid-typing still saves the last edit.
+  useEffect(() => {
+    const onHide = () => flush(true);
+    window.addEventListener('pagehide', onHide);
+    return () => {
+      window.removeEventListener('pagehide', onHide);
+      flush(true);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [save]);
 
   const link = (via: Source, token?: string) => `${origin}/e/${slug}?${token ? `i=${token}&` : ''}via=${via}`;
   const message = (via: Source, token?: string) => [note.trim(), link(via, token)].filter(Boolean).join('\n');
@@ -86,10 +130,23 @@ export default function ShareInvite({ origin, slug, title, when, invitees }: { o
         <span>
           Your message <span className="hint">· sent with every invite below, followed by the link</span>
         </span>
-        <textarea id="invite-note" rows={3} maxLength={500} value={note} onChange={(e) => changeNote(e.target.value)} placeholder="Add a message, or leave blank to send only the link" />
+        <textarea
+          id="invite-note"
+          rows={3}
+          maxLength={500}
+          value={note}
+          onChange={(e) => changeNote(e.target.value)}
+          onBlur={() => flush()}
+          placeholder="Add a message, or leave blank to send only the link"
+        />
       </label>
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <span className="muted small">{note.trim().length}/500</span>
+        <span className="muted small" aria-live="polite">
+          {note.trim().length}/500
+          {saveState === 'saving' && ' · Saving…'}
+          {saveState === 'saved' && ' · Saved'}
+          {saveState === 'error' && <span className="error"> · Couldn’t save. Check your connection; it’ll retry when you edit again.</span>}
+        </span>
         {note !== defaultNote && (
           <button type="button" className="link-btn small" onClick={() => changeNote(defaultNote)}>
             Reset to default

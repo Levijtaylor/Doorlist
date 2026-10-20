@@ -99,6 +99,11 @@ export const claimSchema = z.object({
   quantity: z.number().int().min(0).max(999),
 });
 
+export const inviteNoteSchema = z.object({
+  // null resets to the default wording; '' means send only the link.
+  note: z.string().max(500, 'Keep the message under 500 characters.').nullable(),
+});
+
 export const updateSchema = z.object({
   message: z.string().trim().min(1, 'Write a message first.').max(1000, 'Keep updates under 1000 characters.'),
   audience: z.enum(['going', 'going_maybe', 'everyone']),

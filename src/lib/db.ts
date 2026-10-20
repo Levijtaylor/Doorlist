@@ -135,7 +135,27 @@ function open() {
     url = `file:${file.replace(/\\/g, '/')}`;
   }
   const client = createClient({ url, authToken: process.env.TURSO_AUTH_TOKEN });
-  return { client, ready: client.executeMultiple(SCHEMA) };
+  return { client, ready: client.executeMultiple(SCHEMA).then(() => migrate(client)) };
+}
+
+// Columns added after launch. CREATE TABLE IF NOT EXISTS skips tables that already
+// exist, so each one is added here only when the live table lacks it.
+const ADDED_COLUMNS: { table: string; column: string; definition: string }[] = [
+  { table: 'events', column: 'invite_note', definition: 'TEXT' },
+];
+
+async function migrate(client: Client): Promise<void> {
+  for (const { table, column, definition } of ADDED_COLUMNS) {
+    const info = await client.execute(`PRAGMA table_info(${table})`);
+    const nameIndex = info.columns.indexOf('name');
+    if (info.rows.some((r) => r[nameIndex] === column)) continue;
+    try {
+      await client.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    } catch (e) {
+      // Another server instance may have added it at the same moment.
+      if (!String(e).includes('duplicate column')) throw e;
+    }
+  }
 }
 
 async function db(): Promise<Client> {

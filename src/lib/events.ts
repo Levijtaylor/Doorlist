@@ -32,6 +32,8 @@ export type EventRow = {
   allow_maybe: number;
   show_guest_list: number;
   invite_only: number;
+  /** The host's message sent ahead of invite links; null means use the default. */
+  invite_note: string | null;
   created_at: string;
   updated_at: string;
 };
