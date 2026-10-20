@@ -221,7 +221,10 @@ td.num { font-variant-numeric: tabular-nums; }
 }
 .share-btn:hover { border-color: var(--ink-2); }
 .share-btn .dot { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; color: #fff; font-size: 0.75rem; font-weight: 800; flex: none; }
-.linkbox { display: flex; gap: 8px; min-width: 0; }
+.linkbox { display: flex; gap: 8px; min-width: 0; flex-wrap: wrap; }
+.linkbox input { flex: 1 1 220px; }
+.invite-preview { background: var(--surface-2); border-radius: var(--radius-sm); padding: 12px 14px; display: grid; gap: 6px; font-size: 0.92rem; }
+.invite-preview .prose { overflow-wrap: anywhere; }
 .linkbox input { font-family: ui-monospace, 'Cascadia Mono', Menlo, monospace; font-size: 0.85rem; }
 .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-weight: 600; z-index: 50; max-width: calc(100% - 32px); text-align: center; }
 
