@@ -20,7 +20,7 @@ Open http://localhost:3000, click **Host an event**, and create an account. In d
 - Guests: plus-ones per person, capacity, RSVP deadline, whether "Maybe" is allowed, whether guests see the guest list, and invite-only mode.
 - Who's invited: a list of names with an optional phone and email. Each person gets a personal link, so the tracker can show who hasn't replied.
 - Manage page: a live tracker (going, maybe, can't go, no reply yet, headcount including plus-ones, spots left), which app each guest came from, a guest table, the item sign-up summary, and updates.
-- Send invites with one-tap buttons for Text, WhatsApp, Messenger, Snapchat, Instagram and Email, or copy the link. Each button uses its own `?via=` link.
+- Send invites with **Share invite…** (the phone's share menu, for Snapchat, Instagram, Messenger or any other app), one-tap Text, WhatsApp and Email buttons, or a copyable link. Each uses its own `?via=` link.
 - Post updates, or attach a message when editing the event. These reach guests by text, WhatsApp or email.
 
 **Guests** (no account needed)
@@ -39,7 +39,7 @@ Every invite link carries `?via=sms|whatsapp|messenger|snapchat|instagram|email|
 | Text message | SMS to their number | Twilio |
 | WhatsApp | WhatsApp to their number | Twilio WhatsApp |
 | Email | Their email | Resend |
-| Snapchat, Instagram, Messenger | Guest picks SMS, WhatsApp or email (phone number field by default) | These apps don't let outside services message their users, so the phone number is the fallback |
+| Share menu or copied link | Guest picks SMS, WhatsApp or email (phone number field by default) | The app it was shared through is unknown, and Snapchat, Instagram and Messenger don't let outside services message their users anyway |
 
 Guests can also choose "No messages, I'll check this page." Guests have no password, so every text or email they get includes a personal link that signs them back in on any device.
 

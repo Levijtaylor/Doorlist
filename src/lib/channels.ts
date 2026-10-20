@@ -1,6 +1,7 @@
 // Shared by server and client: where an invite link was shared, and how a guest wants updates.
 
-export const SOURCES = ['sms', 'whatsapp', 'messenger', 'snapchat', 'instagram', 'email', 'link'] as const;
+// messenger/snapchat/instagram stay recognized for links shared before the single Share button.
+export const SOURCES = ['sms', 'whatsapp', 'messenger', 'snapchat', 'instagram', 'email', 'share', 'link'] as const;
 export type Source = (typeof SOURCES)[number];
 
 export const SOURCE_LABEL: Record<Source, string> = {
@@ -10,7 +11,8 @@ export const SOURCE_LABEL: Record<Source, string> = {
   snapchat: 'Snapchat',
   instagram: 'Instagram',
   email: 'Email',
-  link: 'Shared link',
+  share: 'Share menu',
+  link: 'Copied link',
 };
 
 export function parseSource(value: string | null | undefined): Source {

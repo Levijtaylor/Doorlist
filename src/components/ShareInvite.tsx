@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { copyText } from '@/lib/client';
-import { SOURCE_LABEL, type Source } from '@/lib/channels';
+import type { Source } from '@/lib/channels';
 import type { InviteeView } from '@/lib/events';
 
 const enc = encodeURIComponent;
@@ -14,6 +14,7 @@ const LOOK: Record<Source, { mark: string; bg: string; fg?: string }> = {
   snapchat: { mark: 'S', bg: '#fffc00', fg: '#111' },
   instagram: { mark: 'IG', bg: '#d62976' },
   email: { mark: '@', bg: '#5b6472' },
+  share: { mark: '↗', bg: '#2b3039' },
   link: { mark: '🔗', bg: '#2b3039' },
 };
 
@@ -40,23 +41,26 @@ export default function ShareInvite({ origin, slug, title, when, invitees }: { o
     flash((await copyText(url)) ? label : 'Copy didn’t work here. Long-press the link to copy it.');
   }
 
-  /** Snapchat, Instagram and Messenger have no web "compose" link, so use the phone's share sheet, or copy. */
-  async function shareTo(via: Source) {
-    const url = link(via);
+  /** Opens the device's share sheet (Snapchat, Instagram, Messenger, AirDrop…), or copies the link where there isn't one. */
+  async function share() {
+    const url = link('share');
     if (typeof navigator.share === 'function') {
       try {
-        await navigator.share({ title, text: `You’re invited to ${title}`, url });
+        await navigator.share({ title, text: `You’re invited to ${title} (${when}). RSVP here:`, url });
         return;
       } catch (e) {
         if ((e as Error).name === 'AbortError') return;
       }
     }
-    await copy(url, `Link copied. Paste it into a ${SOURCE_LABEL[via]} chat.`);
+    await copy(url, 'Link copied. Paste it into any chat.');
   }
 
   return (
     <div className="stack">
-      <p className="muted small">Each button uses its own link, so you can see which app your guests came from. Guests get updates back through the app they used when we can reach it.</p>
+      <button type="button" className="btn btn-primary btn-block" onClick={share}>
+        Share invite…
+      </button>
+      <p className="muted small">Opens your phone’s share menu so you can send it with Snapchat, Instagram, Messenger or any other app. On a computer, it copies the link.</p>
       <div className="share-grid">
         <a className="share-btn" href={`sms:?&body=${enc(message('sms'))}`}>
           <Dot source="sms" /> Text message
@@ -64,11 +68,6 @@ export default function ShareInvite({ origin, slug, title, when, invitees }: { o
         <a className="share-btn" href={`https://wa.me/?text=${enc(message('whatsapp'))}`} target="_blank" rel="noopener noreferrer">
           <Dot source="whatsapp" /> WhatsApp
         </a>
-        {(['messenger', 'snapchat', 'instagram'] as const).map((s) => (
-          <button key={s} type="button" className="share-btn" onClick={() => shareTo(s)}>
-            <Dot source={s} /> {SOURCE_LABEL[s]}
-          </button>
-        ))}
         <a className="share-btn" href={`mailto:?subject=${enc(`You’re invited: ${title}`)}&body=${enc(message('email'))}`}>
           <Dot source="email" /> Email
         </a>
