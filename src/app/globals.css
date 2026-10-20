@@ -202,6 +202,9 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .guest-pill { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: 999px; background: var(--surface-2); font-size: 0.9rem; font-weight: 550; }
 .avatar { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 0.72rem; font-weight: 700; background: var(--accent); color: var(--accent-ink); flex: none; }
 
+.extras { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.extras li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border: 1px dashed var(--line); border-radius: var(--radius-sm); min-width: 0; overflow-wrap: anywhere; }
+
 .feature-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .feature-chip {
   font: inherit; font-size: 0.9rem; font-weight: 550; padding: 7px 14px; border-radius: 999px; cursor: pointer;

@@ -3,13 +3,14 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import Banner, { bannerSrc } from '@/components/Banner';
 import ItemsList from '@/components/ItemsList';
+import GuestExtras from '@/components/GuestExtras';
 import RsvpPanel from '@/components/RsvpPanel';
 import Tracker from '@/components/Tracker';
 import { currentPerson, getPerson } from '@/lib/auth';
 import { accentFor } from '@/lib/banners';
 import { parseSource } from '@/lib/channels';
 import { displayPhone } from '@/lib/contact';
-import { eventStats, getEventBySlug, getInviteeByToken, getRsvp, isInvitedPerson, listGuests, listItems, listUpdates, parseFeatures } from '@/lib/events';
+import { eventStats, getEventBySlug, getInviteeByToken, getRsvp, isInvitedPerson, listGuests, listExtras, listItems, listUpdates, parseFeatures } from '@/lib/events';
 import { formatDeadline, formatMoney, formatWhen, shortName, timeAgo, zonedToUtc } from '@/lib/format';
 import { appOrigin } from '@/lib/origin';
 
@@ -50,6 +51,8 @@ export default async function EventPage({ params, searchParams }: Props) {
     e.show_guest_list || isHost ? listGuests(e.id) : [],
     me ? isInvitedPerson(e.id, me.id) : false,
   ]);
+  const extras = await listExtras(e.id);
+  const canBring = !!rsvp && rsvp.status !== 'declined';
   const guests = allGuests.filter((g) => g.status !== 'declined');
   const when = formatWhen(e.starts_at, e.ends_at, e.timezone);
   const accent = accentFor(e.accent);
@@ -183,11 +186,12 @@ export default async function EventPage({ params, searchParams }: Props) {
             </section>
           )}
 
-          {(e.bring_note || items.length > 0) && (
+          {(e.bring_note || items.length > 0 || extras.length > 0 || canBring) && (
             <section className="section">
               <h2>What to bring</h2>
               {e.bring_note && <p className="prose">{e.bring_note}</p>}
-              {items.length > 0 && <ItemsList eventId={e.id} items={items} myId={me?.id ?? null} canClaim={!!rsvp && rsvp.status !== 'declined'} />}
+              {items.length > 0 && <ItemsList eventId={e.id} items={items} myId={me?.id ?? null} canClaim={canBring} />}
+              <GuestExtras eventId={e.id} extras={extras} myId={me?.id ?? null} canAdd={canBring} />
             </section>
           )}
 

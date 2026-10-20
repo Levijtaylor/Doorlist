@@ -87,6 +87,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if (invitee && !invitee.person_id) statements.push(stmt('UPDATE invitees SET person_id = ? WHERE id = ?', me.id, invitee.id));
   if (data.status === 'declined') {
     statements.push(stmt('DELETE FROM item_claims WHERE person_id = ? AND item_id IN (SELECT id FROM items WHERE event_id = ?)', me.id, event.id));
+    statements.push(stmt('DELETE FROM guest_extras WHERE person_id = ? AND event_id = ?', me.id, event.id));
   }
   await batch(statements);
 

@@ -158,6 +158,17 @@ export async function listItems(eventId: string): Promise<ItemView[]> {
   });
 }
 
+export type ExtraView = { id: string; person_id: string; first_name: string; last_name: string; name: string };
+
+export function listExtras(eventId: string): Promise<ExtraView[]> {
+  return all<ExtraView>(
+    `SELECT x.id, x.person_id, p.first_name, p.last_name, x.name
+     FROM guest_extras x JOIN people p ON p.id = x.person_id
+     WHERE x.event_id = ? ORDER BY x.created_at, x.rowid`,
+    eventId,
+  );
+}
+
 export type InviteeView = {
   id: string;
   name: string;
@@ -311,6 +322,7 @@ export async function deleteEvent(id: string): Promise<void> {
     stmt('DELETE FROM updates WHERE event_id = ?', id),
     stmt('DELETE FROM item_claims WHERE item_id IN (SELECT id FROM items WHERE event_id = ?)', id),
     stmt('DELETE FROM items WHERE event_id = ?', id),
+    stmt('DELETE FROM guest_extras WHERE event_id = ?', id),
     stmt('DELETE FROM rsvps WHERE event_id = ?', id),
     stmt('DELETE FROM invitees WHERE event_id = ?', id),
     stmt('DELETE FROM events WHERE id = ?', id),

@@ -100,6 +100,16 @@ CREATE TABLE IF NOT EXISTS item_claims (
   PRIMARY KEY (item_id, person_id)
 );
 
+-- Things guests say they'll bring that aren't on the host's sign-up list.
+CREATE TABLE IF NOT EXISTS guest_extras (
+  id TEXT PRIMARY KEY,
+  event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  person_id TEXT NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS guest_extras_event ON guest_extras(event_id);
+
 CREATE TABLE IF NOT EXISTS updates (
   id TEXT PRIMARY KEY,
   event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,

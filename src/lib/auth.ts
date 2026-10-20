@@ -94,6 +94,7 @@ export async function mergeGuestInto(guestId: string, accountId: string): Promis
   await batch([
     stmt('UPDATE OR IGNORE rsvps SET person_id = ? WHERE person_id = ?', accountId, guestId),
     stmt('UPDATE OR IGNORE item_claims SET person_id = ? WHERE person_id = ?', accountId, guestId),
+    stmt('UPDATE guest_extras SET person_id = ? WHERE person_id = ?', accountId, guestId),
     stmt('UPDATE invitees SET person_id = ? WHERE person_id = ?', accountId, guestId),
     stmt('UPDATE deliveries SET person_id = ? WHERE person_id = ?', accountId, guestId),
     // Rows left behind were duplicates of something the account already had.

@@ -4,7 +4,7 @@ import ShareInvite from '@/components/ShareInvite';
 import SendUpdate from '@/components/SendUpdate';
 import Tracker from '@/components/Tracker';
 import { requireAccount } from '@/lib/auth';
-import { eventStats, getEvent, listGuests, listInvitees, listItems, listUpdates, sourceBreakdown } from '@/lib/events';
+import { eventStats, getEvent, listExtras, listGuests, listInvitees, listItems, listUpdates, sourceBreakdown } from '@/lib/events';
 import { NOTIFY_LABEL, SOURCE_LABEL } from '@/lib/channels';
 import { displayPhone } from '@/lib/contact';
 import { formatWhen, timeAgo } from '@/lib/format';
@@ -28,9 +28,11 @@ export default async function ManagePage({ params }: { params: { id: string } })
     sourceBreakdown(e.id),
     listInvitees(e.id),
   ]);
+  const extras = await listExtras(e.id);
 
   const bringing = new Map<string, string[]>();
   for (const it of items) for (const c of it.claims) bringing.set(c.person_id, [...(bringing.get(c.person_id) ?? []), c.quantity > 1 ? `${it.name} ×${c.quantity}` : it.name]);
+  for (const x of extras) bringing.set(x.person_id, [...(bringing.get(x.person_id) ?? []), `${x.name} (their own)`]);
 
   return (
     <div className="container page">
@@ -145,7 +147,7 @@ export default async function ManagePage({ params }: { params: { id: string } })
         )}
       </section>
 
-      {items.length > 0 && (
+      {(items.length > 0 || extras.length > 0) && (
         <section className="panel">
           <h2>Sign-up list</h2>
           <div className="table-wrap">
@@ -165,6 +167,17 @@ export default async function ManagePage({ params }: { params: { id: string } })
                       {it.claimed} / {it.quantity}
                     </td>
                     <td className="small">{it.claims.map((c) => `${c.first_name} ${c.last_name}${c.quantity > 1 ? ` (${c.quantity})` : ''}`).join(', ') || '—'}</td>
+                  </tr>
+                ))}
+                {extras.map((x) => (
+                  <tr key={x.id}>
+                    <td>
+                      {x.name} <span className="chip plain">Added by guest</span>
+                    </td>
+                    <td className="num">—</td>
+                    <td className="small">
+                      {x.first_name} {x.last_name}
+                    </td>
                   </tr>
                 ))}
               </tbody>
